@@ -1,38 +1,22 @@
-# Coral Colony Segmentation from Drone Orthomosaics
+# Image Segmentation from Orthomosaics
 
-A three-stage workflow for automatically identifying and delineating individual coral colonies from georeferenced drone imagery. Each stage is a standalone Python script that can be run independently or chained together.
+Documented here is a three-stage workflow for automatically identifying and delineating individual discrete objects (here coral colonies) from .geotiff orthomosaics (here georeferenced drone imagery). 
 
 ![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 
+Each stage is a standalone Python script that can be run independently or chained together. The pipeline 1) splits the orthomosaic it into workable tiles, and 2) runs the Segment Anything Model (SAM) to detect individual coral colonies — outputting combined non-overlapping georeferenced polygons as GeoJSON.
 
-## Overview
+For timeseries analysis of orthomosaics, the pipeline includes an interactive tool to georeference orthomosaics to an existing reference orthomosaic to align colonies in space and time prior to segmenting. 
+
+Of the available tools, [TerraLab AI Segmentation](https://plugins.qgis.org/plugins/AI_Segmentation/) performs similarly in QGIS, and the `georeference` function in QGIS does similar to the interactive calibration yet is less efficient for processing largescale drone imagery.
 
 | Stage | Script | Purpose |
 |-------|--------|---------|
 | 1 | `gcp_calibrator.py` | Align a target raster to a reference orthomosaic using Ground Control Points |
 | 2 | `split_geotiff.py` | Tile the aligned raster into manageable georeferenced chunks |
 | 3 | `auto_coral_segment.py` | Detect coral colonies with SAM, resolve overlaps, and interactively refine |
-
-The pipeline takes a raw drone orthomosaic, aligns it to a reference coordinate frame, splits it into workable tiles, then runs the Segment Anything Model (SAM) to automatically detect individual coral colonies — outputting non-overlapping georeferenced polygons as GeoJSON.
-
-```
-drone_ortho.tif ──► gcp_calibrator.py ──► ortho_corrected.tif
-                                               │
-                                               ▼
-                                        split_geotiff.py
-                                               │
-                                    ┌──────────┼──────────┐
-                                    ▼          ▼          ▼
-                               tile_0000  tile_0001  tile_000N ...
-                                    │          │          │
-                                    ▼          ▼          ▼
-                             auto_coral_segment.py  (per tile)
-                                    │          │          │
-                                    ▼          ▼          ▼
-                               corals_0000.geojson  ...
-```
 
 ---
 
@@ -51,14 +35,16 @@ SAM requires a model checkpoint. Download one from the [SAM model zoo](https://g
 | ViT-L | 1.2 GB | `sam_vit_l_0b3195.pth` |
 | ViT-B | 375 MB | `sam_vit_b_01ec64.pth` |
 
-GPU is strongly recommended for Stage 3 but not required. All scripts auto-detect CUDA availability.
 
 ---
 
 ## Stage 1 — GCP Calibrator
 
+<img width="1200" alt="Screenshot 2026-03-09 at 11 31 29" src="https://github.com/user-attachments/assets/04a5df16-7306-4651-b41a-aa58bb438e3f" />
+
 **`gcp_calibrator.py`** — Align a target raster to a reference orthomosaic by picking matching Ground Control Points in a synchronised split-screen viewer.
 
+<img width="1200" alt="Screenshot 2026-03-09 at 11 31 21" src="https://github.com/user-attachments/assets/d8e9cdea-e7ea-45bf-a5ec-d8d803b190f7" />
 
 gcp_calibrator is a useful "user-friendly" approach when the target raster (e.g. a quick-processed drone ortho) is spatially offset or distorted relative to a high-quality reference (e.g. a properly georeferenced orthomosaic or satellite basemap). gcp_calibrator allows manually selection of paired points in both images, and warps the target raster accordingly.
 
